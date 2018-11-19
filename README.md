@@ -18,7 +18,7 @@ sentences = ["Das ist ein Test",
              "Künstliche Intelligenz wird die Welt übernehmen"]
 
 for sentence in sentences:
-    translation = deepl.translate(sentence, "EN", lang="DE")
+    translation = deepl.translate(sentence, target_lang="EN", lang="DE")
     translation_output = translation.extract_first(log_proba=False)
     print(translation_output)
 ```
