@@ -19,6 +19,27 @@ def random_with_N_digits(n):
     return random_number
 
 
+def genearte_request_json(timestamp, id, sentence, lang, target_lang):
+    data = {
+        "jsonrpc": "2.0",
+        "method": "LMT_handle_jobs",
+        "params": {"jobs": [
+            {"kind": "default",
+             "raw_en_sentence": sentence,
+             "raw_en_context_before": [],
+             "raw_en_context_after":[],
+             "quality":"fast"}
+        ],
+            "lang": {"user_preferred_langs": ["DE", "EN", "FR"],
+                     "source_lang_user_selected": lang,
+                     "target_lang": target_lang},
+            "priority": -1,
+            "timestamp": timestamp},
+        "id": id
+    }
+    return data
+
+
 class DeeplObject():
     def __init__(self,
                  sentence,
@@ -74,23 +95,8 @@ class Deepl():
         else:
             id = random_with_N_digits(8)
             timestamp = generate_timestamp()
-            data = {
-                "jsonrpc": "2.0",
-                "method": "LMT_handle_jobs",
-                "params": {"jobs": [
-                    {"kind": "default",
-                     "raw_en_sentence": sentence,
-                     "raw_en_context_before": [],
-                     "raw_en_context_after":[],
-                     "quality":"fast"}
-                ],
-                    "lang": {"user_preferred_langs": ["DE", "EN", "FR"],
-                             "source_lang_user_selected": lang,
-                             "target_lang": target_lang},
-                    "priority": -1,
-                    "timestamp": timestamp},
-                "id": id
-            }
+            data = genearte_request_json(timestamp, id, sentence,
+                                         lang, target_lang)
             try:
                 response = requests.post(self.url,
                                          headers=self.headers,
