@@ -115,9 +115,15 @@ class Deepl():
                 return self.translate(sentence, target_lang, lang)
 
             js = response.json()
-            translation_js = js['result']['translations'][0]['beams']
-            translation = [i['postprocessed_sentence'] for i in translation_js]
-            log_proba = [i['totalLogProb'] for i in translation_js]
+
+            try:
+                translation_js = js['result']['translations'][0]['beams']
+                translation = [i['postprocessed_sentence'] for i in translation_js]
+                log_proba = [i['totalLogProb'] for i in translation_js]
+            except KeyError:
+                translation = []
+                log_proba = []
+
             deeplo = DeeplObject(sentence, lang,
                                  target_lang, translation,
                                  log_proba)

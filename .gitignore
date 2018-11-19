@@ -108,4 +108,4 @@ venv.bak/
 *.ipynb
 *.xlsx
 *.xls
-
+translate_product_info.py
