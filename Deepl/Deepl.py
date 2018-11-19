@@ -67,11 +67,19 @@ class DeeplObject():
         return l
 
     def extract_first(self, log_proba=True):
+        try:
+            translation = self.translation[0]
+        except IndexError:
+            translation = None
         if log_proba:
-            l = (self.translation[0],
-                 self.log_proba[0])
+            try:
+                logp = self.log_proba[0]
+            except IndexError:
+                logp = None
+            l = (translation,
+                 logp)
         else:
-            l = self.translation[0]
+            l = translation
         return l
 
 
