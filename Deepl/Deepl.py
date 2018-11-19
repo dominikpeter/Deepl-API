@@ -7,7 +7,7 @@ from random import randint
 from requests.exceptions import ConnectionError, HTTPError
 
 
-def timestamp():
+def generate_timestamp():
     return int(round(time.time() * 1000))
 
 
@@ -73,7 +73,7 @@ class Deepl():
             raise Exception('To many trials')
         else:
             id = random_with_N_digits(8)
-            timestamp = timestamp()
+            timestamp = generate_timestamp()
             data = {
                 "jsonrpc": "2.0",
                 "method": "LMT_handle_jobs",
