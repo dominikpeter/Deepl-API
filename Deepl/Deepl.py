@@ -19,7 +19,11 @@ def random_with_N_digits(n):
     return random_number
 
 
-def genearte_request_json(timestamp, id, sentence, lang, target_lang):
+def genearte_request_json(timestamp,
+                          id,
+                          sentence,
+                          lang,
+                          target_lang):
     data = {
         "jsonrpc": "2.0",
         "method": "LMT_handle_jobs",
@@ -40,31 +44,68 @@ def genearte_request_json(timestamp, id, sentence, lang, target_lang):
     return data
 
 
-class DeeplObject():
-    def __init__(self,
-                 sentence,
-                 lang,
-                 target_lang,
-                 translation,
-                 log_proba):
-        self.sentence = sentence
-        self.translation = translation
-        self.log_proba = log_proba
-        self.lang = lang
-        self.target_lang = lang
+class Deepl():
+    def __init__(self, n_trials=10):
+        self.headers = {
+            'Origin': 'https://www.deepl.com',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Content-Type': 'text/plain',
+            'Accept': '*/*',
+            'Referer': 'https://www.deepl.com/translator',
+            'Connection': 'keep-alive',
+        }
+
+        self.url = "https://www2.deepl.com/jsonrpc"
+        self.n_errors = 0
+        self.n_trials = 10
+        self.id = random_with_N_digits(8)
+        self.sentence = ""
+        self.translation = []
+        self.log_proba = []
+        self.lang = "auto"
+        self.target_lang = "EN"
+
 
     def __str__(self):
-        return "[DeeplObject; Sentence: {}, Translation: {}]".format(
+        return "[Sentence: {}, Translation: {}]".format(
             self.sentence, self.translation
         )
 
-    def extract(self, log_proba=True):
-        if log_proba:
-            l = list(zip(self.translation,
-                         self.log_proba))
+
+    def translate(self, sentence, target_lang, lang):
+        if self.n_errors > self.n_trials:
+            raise Exception('To many trials')
         else:
-            l = self.translation
-        return l
+            timestamp = generate_timestamp()
+            data = genearte_request_json(timestamp, self.id,
+                                         sentence, lang, target_lang)
+            try:
+                response = requests.post(self.url,
+                                         headers=self.headers,
+                                         json=data)
+            except (HTTPError, ConnectionError):
+                print("Connection Error. Trying one more time...")
+                self.n_errors += 1
+                return self.translate(cls, sentence, target_lang, lang)
+
+            js = response.json()
+
+            try:
+                translation_js = js['result']['translations'][0]['beams']
+                translation = [i['postprocessed_sentence']
+                               for i in translation_js]
+                log_proba = [i['totalLogProb'] for i in translation_js]
+            except KeyError:
+                translation = []
+                log_proba = []
+
+
+            self.sentence = sentence
+            self.lang = lang
+            self.target_lang = target_lang
+            self.translation = translation
+            self.log_proba = log_proba
+
 
     def extract_first(self, log_proba=True):
         try:
@@ -76,55 +117,15 @@ class DeeplObject():
                 logp = self.log_proba[0]
             except IndexError:
                 logp = None
-            l = (translation,
-                 logp)
+            l = (translation, logp)
         else:
             l = translation
         return l
 
-
-class Deepl():
-    def __init__(self, n_trials=10):
-        self.headers = {
-            'Origin': 'https://www.deepl.com',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Content-Type': 'text/plain',
-            'Accept': '*/*',
-            'Referer': 'https://www.deepl.com/translator',
-            'Connection': 'keep-alive',
-        }
-        self.url = "https://www2.deepl.com/jsonrpc"
-        self.n_errors = 0
-        self.n_trials = 10
-
-    def translate(self, sentence, target_lang, lang="auto"):
-        if self.n_errors > self.n_trials:
-            raise Exception('To many trials')
+    def extract(self, log_proba=True):
+        if log_proba:
+            l = list(zip(self.translation,
+                         self.log_proba))
         else:
-            id = random_with_N_digits(8)
-            timestamp = generate_timestamp()
-            data = genearte_request_json(timestamp, id, sentence,
-                                         lang, target_lang)
-            try:
-                response = requests.post(self.url,
-                                         headers=self.headers,
-                                         json=data)
-            except (HTTPError, ConnectionError):
-                print("Connection Error. Trying one more time...")
-                self.n_errors += 1
-                return self.translate(sentence, target_lang, lang)
-
-            js = response.json()
-
-            try:
-                translation_js = js['result']['translations'][0]['beams']
-                translation = [i['postprocessed_sentence'] for i in translation_js]
-                log_proba = [i['totalLogProb'] for i in translation_js]
-            except KeyError:
-                translation = []
-                log_proba = []
-
-            deeplo = DeeplObject(sentence, lang,
-                                 target_lang, translation,
-                                 log_proba)
-        return deeplo
+            l = self.translation
+        return l
